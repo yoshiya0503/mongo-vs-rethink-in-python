@@ -8,6 +8,7 @@ __version__ = '1.0.0'
 __date__ = '16 Jun 2015'
 
 import asyncio
+import time
 import pymongo as m
 import rethinkdb as r
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -23,24 +24,63 @@ define('port', default=8000, help='this is help', type=int)
 
 class SyncBenchMongoDB(tornado.web.RequestHandler):
 
-    def initialize(self, db):
+    def initialize(self, *, db=None):
         self.db = db
 
     def get(self):
-        pass
+        return
+
+    def bulk_insert_massive(self):
+        start = time()
+        bench = self.db.bench
+        data = [{'_id': i, 'name': ('name' + str(i))} for i in range(0, 10000)]
+        bench.insert_many(data)
+        end = time()
+        diff = end - start
+        print('bulk_insert_massive in pymongo: ', str(diff))
+        return diff
+
+    def find_massive(self):
+        start = time()
+        bench = self.db.bench
+        massive = bench.find({})
+        end = time()
+        diff = end - start
+        print('find_massive in pymongo: ', str(diff))
+        return diff
+
+    def find_one(self):
+        start = time()
+        bench = self.db.bench
+        _ = bench.find_one({'_id': 5555})
+        end = time()
+        diff = end - start
+        print('find_one in pymongo: ', str(diff))
+        return diff
+
+    def delete_massive(self):
+        start = time()
+        bench = self.db.bench
+        delete = {'_id': i for i in range(0, 10000)}
+        bench.delete_many(delete)
+        end = time()
+        diff = end - start
+        print('delete_massive in pymongo: ' str(diff))
+        return diff
 
 
 class SyncBenchRethinkDB(tornado.web.RequestHandler):
 
-    def initialize(self, db):
+    def initialize(self, *, db=None):
         self.db = db
 
     def get(self):
         pass
 
+
 class AsyncBenchMongoDB(tornado.web.RequestHandler):
 
-    def initialize(self, db):
+    def initialize(self, *, db=None):
         self.db = db
 
     @tornado.gen.coroutine
@@ -50,7 +90,7 @@ class AsyncBenchMongoDB(tornado.web.RequestHandler):
 
 class AsyncBenchRethinkDB(tornado.web.RequestHandler):
 
-    def initialize(self, db):
+    def initialize(self, *, db=None):
         self.db = db
 
     @tornado.gen.coroutine
@@ -68,11 +108,10 @@ if __name__ == '__main__':
     rethink = r.connect(host='localhost', port=28015)
 
     app = tornado.web.Application(handlers=[
-        ('/', Index),
-        ('/sync/mongo', BenchMongoDB, db=mongo['test']),
-        ('/sync/rethink', BenchRethinkDB, db=rethink),
-        ('/async/mongo', BenchMongoDB, db=mongo['test']),
-        ('/async/rethink', BenchRethinkDB, db=rethink)
+        ('/sync/mongo', SyncBenchMongoDB, dict(db=mongo['bench'])),
+        ('/sync/rethink', SyncBenchRethinkDB, dict(db=rethink)),
+        ('/async/mongo', AsyncBenchMongoDB, dict(db=mongo['bench'])),
+        ('/async/rethink', AsyncBenchRethinkDB, dict(db=rethink))
     ])
 
     http_server = tornado.httpserver.HTTPServer(app)
