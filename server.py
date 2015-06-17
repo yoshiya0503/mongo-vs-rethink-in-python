@@ -8,9 +8,10 @@ __version__ = '1.0.0'
 __date__ = '16 Jun 2015'
 
 import asyncio
-import time
+import json
 import pymongo as m
 import rethinkdb as r
+from time import time
 from tornado.platform.asyncio import AsyncIOMainLoop
 import tornado.httpserver
 import tornado.httpclient
@@ -28,7 +29,18 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
         self.db = db
 
     def get(self):
-        return
+        time_bulk_insert_massive = self.bulk_insert_massive()
+        time_find_massive = self.find_massive()
+        time_find_one = self.find_one()
+        time_delete_massive = self.delete_massive()
+        res = {
+            'time_bulk_insert_massive': time_bulk_insert_massive,
+            'time_find_massive': time_find_massive,
+            'time_find_one': time_find_one,
+            'time_delete_massive': time_delete_massive
+        }
+        res_json = json.dumps(res)
+        return self.write(res_json)
 
     def bulk_insert_massive(self):
         start = time()
@@ -43,7 +55,7 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
     def find_massive(self):
         start = time()
         bench = self.db.bench
-        bench.find({})
+        _ = [doc for doc in bench.find({})]
         end = time()
         diff = end - start
         print('find_massive in pymongo: ', str(diff))
@@ -61,8 +73,7 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
     def delete_massive(self):
         start = time()
         bench = self.db.bench
-        delete = {'_id': i for i in range(0, 10000)}
-        bench.delete_many(delete)
+        bench.drop()
         end = time()
         diff = end - start
         print('delete_massive in pymongo: ', str(diff))
