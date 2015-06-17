@@ -43,7 +43,7 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
     def find_massive(self):
         start = time()
         bench = self.db.bench
-        massive = bench.find({})
+        bench.find({})
         end = time()
         diff = end - start
         print('find_massive in pymongo: ', str(diff))
@@ -52,7 +52,7 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
     def find_one(self):
         start = time()
         bench = self.db.bench
-        _ = bench.find_one({'_id': 5555})
+        bench.find_one({'_id': 5555})
         end = time()
         diff = end - start
         print('find_one in pymongo: ', str(diff))
@@ -65,7 +65,7 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
         bench.delete_many(delete)
         end = time()
         diff = end - start
-        print('delete_massive in pymongo: ' str(diff))
+        print('delete_massive in pymongo: ', str(diff))
         return diff
 
 
