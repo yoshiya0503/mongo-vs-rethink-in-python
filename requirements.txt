@@ -1,6 +1,6 @@
 greenlet==0.4.7
 invoke==0.10.1
 motor==0.4.1
-pymongo==3.0.2
+pymongo==2.8.0
 rethinkdb==2.0.0.post2
 tornado==4.2
