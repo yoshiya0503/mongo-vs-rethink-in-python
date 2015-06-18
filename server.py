@@ -70,10 +70,10 @@ class SyncBenchMongoDB(tornado.web.RequestHandler):
 
     def bulk_insert_massive(self):
         chronos = Chronos(title='bulk_insert_massive in pymongo')
+        data = [{'_id': i, 'name': ('name' + str(i))} \
+                for i in range(0, 10000)]
         with chronos():
             bench = self.db.bench
-            data = [{'_id': i, 'name': ('name' + str(i))} \
-                    for i in range(0, 10000)]
             bench.insert_many(data)
         print(chronos)
         return chronos.duration()
@@ -107,9 +107,73 @@ class SyncBenchRethinkDB(tornado.web.RequestHandler):
 
     def initialize(self, *, db=None):
         self.db = db
+        try:
+            r.db_create('bench').run(self.db)
+            r.db('bench').table_create('bench').run(self.db)
+        except r.errors.RqlRuntimeError as e:
+            print('Database already exist! skip operation...')
+        else:
+            print('Database exist...')
+        self.db.use('bench')
+
+        try:
+            r.db('bench').table_create('bench').run(self.db)
+        except r.errors.RqlRuntimeError as e:
+            print('Table already exist! skip operation...')
+        else:
+            print('Table exist...')
+
+        try:
+            r.table('bench').index_create('_id').run(self.db)
+        except r.errors.RqlRuntimeError as e:
+            print('Index already exist! skip operation...')
+        else:
+            print('index exist...')
+
 
     def get(self):
-        pass
+        time_insert_massive = self.insert_massive()
+        time_get_massive = self.get_massive()
+        #time_filter = self.filter()
+        time_delete_massive = self.delete_massive()
+        res = {
+            'time_insert_massive': time_insert_massive,
+            'time_get_massive': time_get_massive,
+        #    'time_filter': time_filter,
+            'time_delete_massive': time_delete_massive
+        }
+        res_json = json.dumps(res)
+        return self.write(res_json)
+
+    def insert_massive(self):
+        chronos = Chronos(title='insert_massive in rethink')
+        data = [{'id': i, 'name': ('name' + str(i))} \
+                for i in range(0, 10000)]
+        with chronos():
+            r.table('bench').insert(data).run(self.db)
+        print(chronos)
+        return chronos.duration()
+
+    def get_massive(self):
+        chronos = Chronos(title='get_massive in rethink')
+        with chronos():
+            _ = r.table('bench').between(0, 9999, index='id').run(self.db)
+        print(chronos)
+        return chronos.duration()
+
+    def filter(self):
+        chronos = Chronos(title='filter in rethink')
+        with chronos():
+            _ = r.table('bench').filter({'id': 5555}, index='_id').run(self.db)
+        print(chronos)
+        return chronos.duration()
+
+    def delete_massive(self):
+        chronos = Chronos(title='delte_massive in rethink')
+        with chronos():
+            r.db('bench').table_drop('bench').run(self.db)
+        print(chronos)
+        return chronos.duration()
 
 
 class AsyncBenchMongoDB(tornado.web.RequestHandler):
