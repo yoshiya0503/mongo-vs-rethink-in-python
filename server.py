@@ -4,7 +4,7 @@
 Bench mark (RethinkDB and MongoDB)
 """
 __author__ = 'Yoshiya Ito <myon53@gmail.com>'
-__version__ = '1.0.0'
+__version__ = '2.0.0'
 __date__ = '16 Jun 2015'
 
 import asyncio
@@ -23,11 +23,6 @@ from contextlib import contextmanager
 from time import time
 
 define('port', default=8000, help='this is help', type=int)
-
-
-@contextmanager
-def listen(server):
-    pass
 
 
 class Chronos(object):
@@ -378,7 +373,6 @@ class AsyncBenchRethinkDB(tornado.web.RequestHandler):
             yield r.db('bench').table_drop('bench').run(self.db)
         print(chronos)
         return chronos.duration()
-
 
 
 if __name__ == '__main__':
